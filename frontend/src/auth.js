@@ -7,58 +7,86 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       credentials: {
         email: {},
         password: {},
-        role: {}, // Added role to the credentials
+        role: {},
       },
-      authorize: async (credentials) => {
-        console.log(credentials);
+      async authorize(credentials) {
+        try {
+          const response = await fetch("http://localhost:5000/api/auth/login", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              identifier: credentials?.email,
+              password: credentials?.password,
+            }),
+          });
 
-        let endpoint;
-        if (credentials.role === "student") {
-          endpoint = "http://localhost:4000/login-student";
-        } else if (credentials.role === "teacher") {
-          endpoint = "http://localhost:4000/login-teacher";
-        } else {
-          throw new Error("Invalid role");
+          if (!response.ok) {
+            return null;
+          }
+
+          const { data } = await response.json();
+
+          return {
+            ...data,
+            name: `${data.firstName} ${data.lastName}`,
+          };
+        } catch (error) {
+          console.error("Authentication error:", error);
+          return null;
         }
-        console.log(endpoint);
-        //Prepare the request body
-        const bodyContent = JSON.stringify({
-          email: credentials.email,
-          password: credentials.password,
-        });
-
-        // Make the API request
-        const response = await fetch(endpoint, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: bodyContent,
-        });
-
-        // Handle the response
-        if (!response.ok) {
-          throw new Error("Failed to authenticate");
-        }
-
-        const data = await response.json();
-        console.log(data);
-
-        // Return user data if authentication is successful
-        return data.data;
       },
     }),
   ],
   callbacks: {
     async jwt({ token, user }) {
-      // Merge user data into the JWT token
-      return { ...token, ...user };
+      if (user) {
+        const authUser = user;
+        return {
+          ...token,
+          id: authUser.id,
+          email: authUser.email,
+          firstName: authUser.firstName,
+          lastName: authUser.lastName,
+          role: authUser.role,
+          sapid: authUser.sapid,
+          rollno: authUser.rollno,
+          year: authUser.year,
+          class: authUser.class,
+          batch: authUser.batch,
+          sem: authUser.sem,
+          token: authUser.token,
+          name: `${authUser.firstName} ${authUser.lastName}`,
+        };
+      }
+      return token;
     },
     async session({ session, token }) {
-      // Attach user information to the session
-      session.user = token;
-      return session;
+      return {
+        ...session,
+        user: {
+          ...session.user,
+          id: token.id,
+          email: token.email,
+          firstName: token.firstName,
+          lastName: token.lastName,
+          role: token.role,
+          sapid: token.sapid,
+          rollno: token.rollno,
+          year: token.year,
+          class: token.class,
+          batch: token.batch,
+          sem: token.sem,
+          token: token.token,
+          name: `${token.firstName} ${token.lastName}`,
+        },
+        token: token.token,
+      };
     },
+  },
+  session: {
+    strategy: "jwt",
   },
   secret: process.env.NEXTAUTH_SECRET,
 });
