@@ -1,6 +1,6 @@
-import axios, { InternalAxiosRequestConfig } from 'axios';
+import axios, { InternalAxiosRequestConfig } from "axios";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
 
 const api = axios.create({
   baseURL: API_URL,
@@ -41,7 +41,7 @@ export type Class = {
 
 export const classApi = {
   getClasses: async (token: string): Promise<Class[]> => {
-    const response = await api.get('/class', {
+    const response = await api.get("/class", {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -58,8 +58,11 @@ export const classApi = {
     return response.data;
   },
 
-  createClass: async (data: { name: string; description?: string }, token: string): Promise<Class> => {
-    const response = await api.post('/class', data, {
+  createClass: async (
+    data: { name: string; description?: string },
+    token: string
+  ): Promise<Class> => {
+    const response = await api.post("/class", data, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -67,30 +70,52 @@ export const classApi = {
     return response.data;
   },
 
-  addStudent: async (classId: string, studentId: string, token: string): Promise<Class> => {
-    const response = await api.post(`/class/${classId}/students`, { studentId }, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+  addStudent: async (
+    classId: string,
+    studentId: string,
+    token: string
+  ): Promise<Class> => {
+    const response = await api.post(
+      `/class/${classId}/students`,
+      { studentId },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
     return response.data;
   },
 
-  removeStudent: async (classId: string, studentId: string, token: string): Promise<Class> => {
-    const response = await api.delete(`/class/${classId}/students/${studentId}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+  removeStudent: async (
+    classId: string,
+    studentId: string,
+    token: string
+  ): Promise<Class> => {
+    const response = await api.delete(
+      `/class/${classId}/students/${studentId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
     return response.data;
   },
 
-  joinClass: async (code: string, token: string): Promise<{ message: string }> => {
-    const response = await api.post('/class/join', { code }, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+  joinClass: async (
+    code: string,
+    token: string
+  ): Promise<{ message: string }> => {
+    const response = await api.post(
+      "/class/join",
+      { code },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
     return response.data;
   },
 
@@ -117,7 +142,10 @@ export const classApi = {
 
   updateColumns: async (
     classId: string,
-    columns: Array<{ name: string; type: "Experiment" | "Assignment" | "Mini Project" }>,
+    columns: Array<{
+      name: string;
+      type: "Experiment" | "Assignment" | "Mini Project";
+    }>,
     token: string
   ): Promise<Class> => {
     const response = await fetch(`${API_URL}/class/${classId}/columns`, {
@@ -140,13 +168,15 @@ export const classApi = {
     classId: string,
     studentId: string,
     token: string
-  ): Promise<Array<{
-    column: string;
-    grades: Array<{
-      criterion: string;
-      marks: number;
-    }>;
-  }>> => {
+  ): Promise<
+    Array<{
+      column: string;
+      grades: Array<{
+        criterion: string;
+        marks: number;
+      }>;
+    }>
+  > => {
     const response = await api.get(`/grades/${classId}/${studentId}`, {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -223,4 +253,4 @@ export const userApi = {
     });
     return response.data;
   },
-}; 
+};

@@ -10,6 +10,7 @@
   "dependencies": {
     "bcryptjs": "^2.4.3",
     "cookie-parser": "^1.4.7",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "docx": "^9.4.1",
     "docx-pdf": "^0.0.1",
@@ -25,4 +26,6 @@
   "devDependencies": {
     "nodemon": "^3.0.3"
   }
+}
+
 }
