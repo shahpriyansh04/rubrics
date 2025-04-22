@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { classApi, type Class } from "@/services/api";
+import { DownloadRubricButton } from "@/components/DownloadRubricButton";
 
 const TOTAL_MARKS = 25;
 
@@ -219,9 +220,12 @@ export default function StudentRubrics() {
             Back to Class
           </Link>
         </Button>
-        <h1 className="text-4xl font-bold text-gray-800">
-          Rubrics for {student.firstName} {student.lastName}
-        </h1>
+        <div className="flex justify-between items-center">
+          <h1 className="text-4xl font-bold text-gray-800">
+            Rubrics for {student.firstName} {student.lastName}
+          </h1>
+          <DownloadRubricButton studentId={studentId} classId={classId} />
+        </div>
         <div className="mt-4 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           <div className="bg-white p-4 rounded-lg shadow">
             <p className="text-sm text-gray-500">SAP ID</p>
