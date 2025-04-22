@@ -62,6 +62,9 @@ export default function AssignmentGrading() {
     Record<string, SubmissionDetails>
   >({});
 
+  console.log(studentGrades);
+  console.log(submittedGrades);
+
   React.useEffect(() => {
     if (status === "authenticated") {
       fetchClassDetails();
@@ -106,10 +109,6 @@ export default function AssignmentGrading() {
       const initialGrades: Record<string, Record<string, number>> = {};
       const initialSubmitted: Record<string, SubmissionDetails> = {};
 
-      classData.students.forEach((student) => {
-        initialGrades[student._id] = {};
-      });
-
       // Fetch existing grades for all students
       const gradePromises = classData.students.map(async (student) => {
         try {
@@ -123,6 +122,7 @@ export default function AssignmentGrading() {
           const assignmentGrades = grades.find(
             (g) => g.column === assignmentId
           );
+
           if (assignmentGrades) {
             // Convert array of grades to object format
             const gradesObject: Record<string, number> = {};
@@ -132,24 +132,42 @@ export default function AssignmentGrading() {
             initialGrades[student._id] = gradesObject;
 
             // Store submission details if available
-            if (assignmentGrades.submittedAt && assignmentGrades.submittedBy) {
-              initialSubmitted[student._id] = {
+            // Check for submittedAt directly from assignmentGrades
+            if (assignmentGrades.submittedAt) {
+              console.log(`Found submission for student ${student._id}:`, {
                 submittedAt: assignmentGrades.submittedAt,
                 submittedBy: assignmentGrades.submittedBy,
+              });
+
+              initialSubmitted[student._id] = {
+                submittedAt: assignmentGrades.submittedAt,
+                submittedBy: assignmentGrades.submittedBy || "",
               };
             }
           }
         } catch (err) {
           console.error(
-            `Failed to fetch grades for student ${student._id}`,
+            `Failed to fetch grades for student ${student._id}:`,
             err
           );
         }
       });
 
       await Promise.all(gradePromises);
+
+      // Log the data before setting state
+      console.log("Initial grades:", JSON.stringify(initialGrades, null, 2));
+      console.log(
+        "Initial submitted:",
+        JSON.stringify(initialSubmitted, null, 2)
+      );
+
+      // Set the state
       setStudentGrades(initialGrades);
       setSubmittedGrades(initialSubmitted);
+
+      // Log the submission state for debugging
+      console.log("Submission state after loading:", initialSubmitted);
     } catch (err) {
       setError("Failed to fetch grades");
       console.error(err);
@@ -164,6 +182,12 @@ export default function AssignmentGrading() {
     value: string
   ) => {
     if (!selectedAssignment) return;
+
+    // Check if grades are already submitted
+    if (isGradesSubmitted(studentId)) {
+      setError("Grades have already been submitted");
+      return;
+    }
 
     const numericValue = value === "none" ? 0 : parseFloat(value);
 
@@ -226,51 +250,6 @@ export default function AssignmentGrading() {
     }
   };
 
-  const handleSaveStudentMarks = async (studentId: string) => {
-    if (!classData || !selectedAssignment || session?.user?.role !== "teacher")
-      return;
-
-    setSavingStudentId(studentId);
-    setSaveError(null);
-    setSaveSuccess(false);
-
-    try {
-      const grades = studentGrades[studentId] || {};
-
-      if (Object.keys(grades).length > 0) {
-        // Convert the grades object to the format expected by the API
-        const gradesArray = Object.entries(grades).map(
-          ([criterion, marks]) => ({
-            criterion,
-            marks,
-          })
-        );
-
-        // Use column instead of selectedAssignment to match API expectations
-        await classApi.updateStudentGrades(
-          classId,
-          studentId,
-          selectedAssignment, // column name from the selected assignment
-          gradesArray,
-          session?.user?.token as string
-        );
-
-        // Set the current date and time
-        const now = new Date();
-        setLastSavedAt(now.toLocaleString());
-        setSaveSuccess(true);
-
-        // Refresh the student's grades
-        await fetchClassDetails();
-      }
-    } catch (err) {
-      setSaveError("Failed to save marks");
-      console.error(err);
-    } finally {
-      setSavingStudentId(null);
-    }
-  };
-
   const handleSubmitStudentGrades = async (studentId: string) => {
     if (!classData || !selectedAssignment || session?.user?.role !== "teacher")
       return;
@@ -302,7 +281,7 @@ export default function AssignmentGrading() {
         );
 
         // Then submit the grades
-        const submittedGrades = await classApi.submitGrades(
+        const submittedGradesResponse = await classApi.submitGrades(
           classId,
           studentId,
           selectedAssignment,
@@ -310,13 +289,23 @@ export default function AssignmentGrading() {
         );
 
         // Update the submitted grades state
-        setSubmittedGrades((prev) => ({
-          ...prev,
-          [studentId]: {
-            submittedAt: submittedGrades.submittedAt,
-            submittedBy: submittedGrades.submittedBy,
-          },
-        }));
+        console.log("Updating submitted grades after submission:", {
+          studentId,
+          submittedAt: submittedGradesResponse.submittedAt,
+          submittedBy: submittedGradesResponse.submittedBy,
+        });
+
+        setSubmittedGrades((prev) => {
+          const updated = {
+            ...prev,
+            [studentId]: {
+              submittedAt: submittedGradesResponse.submittedAt,
+              submittedBy: submittedGradesResponse.submittedBy,
+            },
+          };
+          console.log("Updated submitted grades:", updated);
+          return updated;
+        });
 
         // Set the current date and time
         const now = new Date();
@@ -332,11 +321,21 @@ export default function AssignmentGrading() {
   };
 
   const isGradesSubmitted = (studentId: string) => {
-    return !!submittedGrades[studentId]?.submittedAt;
+    const isSubmitted = !!submittedGrades[studentId]?.submittedAt;
+    console.log(`Checking submission state for student ${studentId}:`, {
+      submittedGrades: submittedGrades[studentId],
+      isSubmitted,
+    });
+    return isSubmitted;
   };
 
   const getSubmittedDate = (studentId: string) => {
-    return submittedGrades[studentId]?.submittedAt;
+    const submittedAt = submittedGrades[studentId]?.submittedAt;
+    console.log(
+      `Getting submission date for student ${studentId}:`,
+      submittedAt
+    );
+    return submittedAt;
   };
 
   // Get enabled criteria from the class data
@@ -344,6 +343,11 @@ export default function AssignmentGrading() {
     if (!classData) return [];
     return classData.rubrics.filter((criterion) => criterion.enabled);
   }, [classData]);
+
+  // Add a useEffect to log the submittedGrades state whenever it changes
+  React.useEffect(() => {
+    console.log("submittedGrades state updated:", submittedGrades);
+  }, [submittedGrades]);
 
   if (status === "loading") {
     return <p>Loading...</p>;

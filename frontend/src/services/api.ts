@@ -1,6 +1,6 @@
 import axios, { InternalAxiosRequestConfig } from "axios";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5002/api";
 
 const api = axios.create({
   baseURL: API_URL,
@@ -175,6 +175,8 @@ export const classApi = {
         criterion: string;
         marks: number;
       }>;
+      submittedAt?: string;
+      submittedBy?: string;
     }>
   > => {
     const response = await api.get(`/grades/${classId}/${studentId}`, {
