@@ -454,6 +454,7 @@ export default function AssignmentGrading() {
                           {criterion.name} (/{criterion.maxMarks})
                         </TableHead>
                       ))}
+                      <TableHead className="text-center">Total</TableHead>
                       <TableHead className="text-center">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -516,6 +517,18 @@ export default function AssignmentGrading() {
                               </Select>
                             </TableCell>
                           ))}
+                          <TableCell className="text-center text-lg font-semibold">
+                            {enabledCriteria.reduce(
+                              (sum, criterion) =>
+                                sum +
+                                (studentGrades[student._id]?.[criterion.name]
+                                  ? Number(
+                                      studentGrades[student._id][criterion.name]
+                                    )
+                                  : 0),
+                              0
+                            )}
+                          </TableCell>{" "}
                           <TableCell className="text-center">
                             {isGradesSubmitted(student._id) ? (
                               <div className="text-sm text-gray-500">
