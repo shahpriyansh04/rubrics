@@ -127,11 +127,32 @@ router.get("/downloadRubric/:studentId/:classId", auth, async (req, res) => {
         const key = `${criteriaIndex}${columnIndex}`;
         gradeMatrix[key] = " ";
         gradeMatrix[`t${columnIndex}`] = " ";
+        gradeMatrix[`co${columnIndex}`] = " "; // Add course outcome reference
       }
     }
 
     // Now update with actual values
     grades.forEach((grade, columnIndex) => {
+      // Find the column to get its associated course outcome
+      const column = classData.columns.find((col) => col.name === grade.column);
+      const courseOutcomeCode = column?.courseOutcome || "";
+
+      // Find the course outcome details if there's an association
+      let courseOutcomeDetails = "";
+      if (courseOutcomeCode && classData.courseOutcomes) {
+        const outcome = classData.courseOutcomes.find(
+          (co) => co.code === courseOutcomeCode
+        );
+        if (outcome) {
+          courseOutcomeDetails = `${outcome.code} - ${outcome.description}`;
+        } else {
+          courseOutcomeDetails = courseOutcomeCode;
+        }
+      }
+
+      // Set the course outcome for this column
+      gradeMatrix[`co${columnIndex + 1}`] = courseOutcomeDetails;
+
       grade.grades.forEach((g, criteriaIndex) => {
         const key = `${criteriaIndex + 1}${columnIndex + 1}`;
         if (g.marks !== undefined) {
@@ -167,11 +188,16 @@ router.get("/downloadRubric/:studentId/:classId", auth, async (req, res) => {
         name: `${student.firstName} ${student.lastName}`,
         sapid: student.sapid,
         course: classData.name,
-        course_code: classData.code,
+        course_code: classData.courseCode,
         year: student.year,
         sem: student.sem,
         batch: student.batch,
         teacher_name: `${classData.teacher.firstName} ${classData.teacher.lastName}`,
+        courses: classData.courseOutcomes.map((co) => ({
+          code: co.code,
+          outcome: co.description,
+          level: co.bloomsLevel,
+        })),
         ...gradeMatrix, // This will now include {11}, {12}, etc. format and {t1}, {t2}, etc. for totals
       });
     } catch (error) {
@@ -200,27 +226,5 @@ router.get("/downloadRubric/:studentId/:classId", auth, async (req, res) => {
     res.status(500).send("Error generating rubric file");
   }
 });
-
-async function getStudentDetails(studentId) {
-  return {
-    firstName: "Priyansh",
-    lastName: "Shah",
-    sapid: "60003220151",
-    year: "S.Y",
-    batch: "B1",
-    sem: 3,
-  };
-}
-
-async function getStudentGrades(studentId, classId) {
-  return {
-    knowledge: 5,
-    describe: 4,
-    demonstration: 5,
-    interpret: 6,
-    nonVerbal: 5,
-    total: 25,
-  };
-}
 
 module.exports = router;

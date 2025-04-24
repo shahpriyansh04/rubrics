@@ -18,7 +18,7 @@ const generateUniqueCode = async () => {
 
 router.post("/", auth, checkRole("teacher"), async (req, res) => {
   try {
-    const { name, description, columns } = req.body;
+    const { name, description, courseCode, courseOutcomes, columns } = req.body;
     const code = await generateUniqueCode();
 
     const defaultColumns = [
@@ -36,6 +36,8 @@ router.post("/", auth, checkRole("teacher"), async (req, res) => {
       name,
       description,
       code,
+      courseCode,
+      courseOutcomes: courseOutcomes || [],
       teacher: req.user._id,
       students: [],
       rubrics: defaultCriteria,
@@ -241,6 +243,24 @@ router.put("/:id/columns", auth, checkRole("teacher"), async (req, res) => {
     );
     if (invalidColumns.length > 0) {
       return res.status(400).json({ message: "Invalid column type" });
+    }
+
+    // Validate courseOutcome references if present
+    if (req.body.columns.some((col) => col.courseOutcome)) {
+      const validOutcomeCodes = classData.courseOutcomes.map(
+        (outcome) => outcome.code
+      );
+      const invalidOutcomes = req.body.columns.filter(
+        (col) =>
+          col.courseOutcome && !validOutcomeCodes.includes(col.courseOutcome)
+      );
+
+      if (invalidOutcomes.length > 0) {
+        return res.status(400).json({
+          message: "Invalid course outcome reference",
+          invalidOutcomes: invalidOutcomes.map((col) => col.name),
+        });
+      }
     }
 
     classData.columns = req.body.columns;

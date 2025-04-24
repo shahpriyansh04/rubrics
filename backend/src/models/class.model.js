@@ -11,6 +11,16 @@ const classSchema = new mongoose.Schema(
       required: true,
       unique: true,
     },
+    courseCode: {
+      type: String,
+    },
+    courseOutcomes: [
+      {
+        code: String,
+        description: String,
+        bloomsLevel: String,
+      },
+    ],
     teacher: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -39,6 +49,7 @@ const classSchema = new mongoose.Schema(
           type: String,
           enum: ["Experiment", "Assignment", "Mini Project"],
         },
+        courseOutcome: String,
       },
     ],
   },

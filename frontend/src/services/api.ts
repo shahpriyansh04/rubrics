@@ -26,6 +26,12 @@ export type Class = {
   name: string;
   description?: string;
   code: string;
+  courseCode?: string;
+  courseOutcomes?: Array<{
+    code: string;
+    description: string;
+    bloomsLevel: string;
+  }>;
   teacher: User;
   students: User[];
   rubrics: Array<{
@@ -36,6 +42,7 @@ export type Class = {
   columns: Array<{
     name: string;
     type: "Experiment" | "Assignment" | "Mini Project";
+    courseOutcome?: string;
   }>;
 };
 
@@ -59,7 +66,16 @@ export const classApi = {
   },
 
   createClass: async (
-    data: { name: string; description?: string },
+    data: { 
+      name: string; 
+      description?: string;
+      courseCode?: string;
+      courseOutcomes?: Array<{
+        code: string;
+        description: string;
+        bloomsLevel: string;
+      }>;
+    },
     token: string
   ): Promise<Class> => {
     const response = await api.post("/class", data, {

@@ -48,6 +48,34 @@ const RemoveButton = ({
   );
 };
 
+const CourseOutcomeDisplay = ({
+  outcomeCode,
+  outcomes,
+}: {
+  outcomeCode: string;
+  outcomes?: Array<{
+    code: string;
+    description: string;
+    bloomsLevel: string;
+  }>;
+}) => {
+  if (!outcomeCode) return null;
+
+  const outcome = outcomes?.find((o) => o.code === outcomeCode);
+  const description = outcome?.description || "";
+  const shortDescription =
+    description.length > 50
+      ? `${description.substring(0, 50)}...`
+      : description;
+
+  return (
+    <div className="mt-2 text-xs text-gray-600">
+      <span className="font-medium">Course Outcome:</span> {outcomeCode}
+      {outcome && ` - ${shortDescription}`}
+    </div>
+  );
+};
+
 export default function ClassDetails() {
   const params = useParams();
   const { data: session, status } = useSession();
@@ -68,7 +96,11 @@ export default function ClassDetails() {
   const [modalError, setModalError] = React.useState<string | null>(null);
   const [isColumnsDialogOpen, setIsColumnsDialogOpen] = React.useState(false);
   const [tempColumns, setTempColumns] = React.useState<
-    Array<{ name: string; type: "Experiment" | "Assignment" | "Mini Project" }>
+    Array<{
+      name: string;
+      type: "Experiment" | "Assignment" | "Mini Project";
+      courseOutcome?: string;
+    }>
   >([]);
   const [newColumnName, setNewColumnName] = React.useState("");
   const [newColumnType, setNewColumnType] = React.useState<
@@ -239,7 +271,11 @@ export default function ClassDetails() {
   const handleAddColumn = () => {
     if (!newColumnName) return;
 
-    const newColumn = {
+    const newColumn: {
+      name: string;
+      type: "Experiment" | "Assignment" | "Mini Project";
+      courseOutcome?: string;
+    } = {
       name: newColumnName,
       type: newColumnType,
     };
@@ -249,7 +285,17 @@ export default function ClassDetails() {
   };
 
   const handleRemoveColumn = (index: number) => {
-    const newColumns = tempColumns.filter((_, i) => i !== index);
+    const newColumns = [...tempColumns];
+    newColumns.splice(index, 1);
+    setTempColumns(newColumns);
+  };
+
+  const handleUpdateColumnOutcome = (index: number, outcomeCode: string) => {
+    const newColumns = [...tempColumns];
+    newColumns[index] = {
+      ...newColumns[index],
+      courseOutcome: outcomeCode,
+    };
     setTempColumns(newColumns);
   };
 
@@ -671,6 +717,7 @@ export default function ClassDetails() {
                           <TableRow>
                             <TableHead>Name</TableHead>
                             <TableHead>Type</TableHead>
+                            <TableHead>Course Outcome</TableHead>
                             <TableHead>Action</TableHead>
                           </TableRow>
                         </TableHeader>
@@ -692,6 +739,32 @@ export default function ClassDetails() {
                                 >
                                   {column.type}
                                 </span>
+                              </TableCell>
+                              <TableCell>
+                                <select
+                                  value={column.courseOutcome || ""}
+                                  onChange={(e) =>
+                                    handleUpdateColumnOutcome(
+                                      index,
+                                      e.target.value
+                                    )
+                                  }
+                                  className="w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+                                >
+                                  <option value="">None</option>
+                                  {classData?.courseOutcomes?.map((outcome) => (
+                                    <option
+                                      key={outcome.code}
+                                      value={outcome.code}
+                                    >
+                                      {outcome.code} -{" "}
+                                      {outcome.description.substring(0, 30)}
+                                      {outcome.description.length > 30
+                                        ? "..."
+                                        : ""}
+                                    </option>
+                                  ))}
+                                </select>
                               </TableCell>
                               <TableCell>
                                 <Button
@@ -745,6 +818,12 @@ export default function ClassDetails() {
                       {column.type}
                     </span>
                   </div>
+                  {column.courseOutcome && (
+                    <CourseOutcomeDisplay
+                      outcomeCode={column.courseOutcome}
+                      outcomes={classData.courseOutcomes}
+                    />
+                  )}
                 </div>
               ))}
             </div>

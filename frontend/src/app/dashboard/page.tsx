@@ -32,10 +32,21 @@ export default function Dashboard() {
   const router = useRouter();
   const [classes, setClasses] = React.useState<Class[]>([]);
   const [newClassName, setNewClassName] = React.useState("");
+  const [courseCode, setCourseCode] = React.useState("");
+  const [courseOutcomes, setCourseOutcomes] = React.useState<
+    Array<{
+      code: string;
+      description: string;
+      bloomsLevel: string;
+    }>
+  >([]);
   const [isOpen, setIsOpen] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [joinCode, setJoinCode] = React.useState("");
+  const [outcomeCode, setOutcomeCode] = React.useState("");
+  const [outcomeDescription, setOutcomeDescription] = React.useState("");
+  const [outcomeBloomsLevel, setOutcomeBloomsLevel] = React.useState("Apply");
 
   const initialFetchDone = React.useRef(false);
 
@@ -84,15 +95,40 @@ export default function Dashboard() {
       const newClass = await classApi.createClass(
         {
           name: newClassName,
+          courseCode: courseCode,
+          courseOutcomes: courseOutcomes,
         },
         session?.user?.token as string
       );
       setClasses([...classes, newClass]);
       setNewClassName("");
+      setCourseCode("");
+      setCourseOutcomes([]);
     } catch (err) {
       setError("Failed to create class");
       console.error(err);
     }
+  };
+
+  const handleAddOutcome = () => {
+    if (!outcomeCode || !outcomeDescription) return;
+
+    setCourseOutcomes([
+      ...courseOutcomes,
+      {
+        code: outcomeCode,
+        description: outcomeDescription,
+        bloomsLevel: outcomeBloomsLevel,
+      },
+    ]);
+    setOutcomeCode("");
+    setOutcomeDescription("");
+  };
+
+  const handleRemoveOutcome = (index: number) => {
+    const updatedOutcomes = [...courseOutcomes];
+    updatedOutcomes.splice(index, 1);
+    setCourseOutcomes(updatedOutcomes);
   };
 
   if (isLoading) {
@@ -141,7 +177,7 @@ export default function Dashboard() {
                   Create New Class
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-[425px]">
+              <DialogContent className="sm:max-w-[600px]">
                 <DialogHeader>
                   <DialogTitle className="text-2xl font-bold text-gray-800">
                     Create New Class
@@ -159,6 +195,133 @@ export default function Dashboard() {
                       className="col-span-3 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                       placeholder="Enter class name..."
                     />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label
+                      htmlFor="courseCode"
+                      className="text-right text-gray-600"
+                    >
+                      Course Code
+                    </Label>
+                    <Input
+                      id="courseCode"
+                      value={courseCode}
+                      onChange={(e) => setCourseCode(e.target.value)}
+                      className="col-span-3 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                      placeholder="Enter course code (e.g. DJS22ITL307.1)..."
+                    />
+                  </div>
+
+                  <div className="border-t pt-4">
+                    <h3 className="font-medium text-gray-700 mb-4">
+                      Course Outcomes
+                    </h3>
+
+                    <div className="grid grid-cols-12 items-center gap-4 mb-4">
+                      <Label
+                        htmlFor="outcomeCode"
+                        className="text-right text-gray-600 col-span-2"
+                      >
+                        Code
+                      </Label>
+                      <Input
+                        id="outcomeCode"
+                        value={outcomeCode}
+                        onChange={(e) => setOutcomeCode(e.target.value)}
+                        className="col-span-2 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                        placeholder="DJS22ITL307.1"
+                      />
+
+                      <Label
+                        htmlFor="outcomeDescription"
+                        className="text-right text-gray-600 col-span-2"
+                      >
+                        Description
+                      </Label>
+                      <Input
+                        id="outcomeDescription"
+                        value={outcomeDescription}
+                        onChange={(e) => setOutcomeDescription(e.target.value)}
+                        className="col-span-3 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                        placeholder="Develop web applications."
+                      />
+
+                      <Label
+                        htmlFor="bloomsLevel"
+                        className="text-gray-600 col-span-1"
+                      >
+                        Level
+                      </Label>
+                      <select
+                        id="bloomsLevel"
+                        value={outcomeBloomsLevel}
+                        onChange={(e) => setOutcomeBloomsLevel(e.target.value)}
+                        className="col-span-1 border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      >
+                        <option value="Remember">Remember</option>
+                        <option value="Understand">Understand</option>
+                        <option value="Apply">Apply</option>
+                        <option value="Analyze">Analyze</option>
+                        <option value="Evaluate">Evaluate</option>
+                        <option value="Create">Create</option>
+                      </select>
+
+                      <Button
+                        onClick={handleAddOutcome}
+                        type="button"
+                        className="col-span-1 bg-green-600 hover:bg-green-700"
+                      >
+                        +
+                      </Button>
+                    </div>
+
+                    {courseOutcomes.length > 0 && (
+                      <div className="border rounded-md p-4 bg-gray-50 max-h-44 overflow-y-auto">
+                        <table className="w-full">
+                          <thead>
+                            <tr className="text-left border-b">
+                              <th className="pb-2 text-sm font-medium text-gray-700 w-1/6">
+                                Code
+                              </th>
+                              <th className="pb-2 text-sm font-medium text-gray-700 w-3/6">
+                                Description
+                              </th>
+                              <th className="pb-2 text-sm font-medium text-gray-700 w-1/6">
+                                Bloom's Level
+                              </th>
+                              <th className="pb-2 text-sm font-medium text-gray-700 w-1/6">
+                                Action
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {courseOutcomes.map((outcome, index) => (
+                              <tr
+                                key={index}
+                                className="border-b last:border-b-0"
+                              >
+                                <td className="py-2 text-sm">{outcome.code}</td>
+                                <td className="py-2 text-sm">
+                                  {outcome.description}
+                                </td>
+                                <td className="py-2 text-sm">
+                                  {outcome.bloomsLevel}
+                                </td>
+                                <td className="py-2 text-sm">
+                                  <Button
+                                    onClick={() => handleRemoveOutcome(index)}
+                                    variant="ghost"
+                                    className="h-8 px-2 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                  >
+                                    Remove
+                                  </Button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
                   </div>
                 </div>
                 <DialogFooter>
