@@ -117,24 +117,15 @@ router.get("/downloadRubric/:studentId/:classId", auth, async (req, res) => {
       student: studentId,
     });
 
-    // Create a matrix of grades
-    const gradeMatrix = {};
+    // Debug logging to check columns and grades
+    console.log("classData.columns:", classData.columns);
+    console.log("grades:", grades);
 
-    // Initialize all possible keys with empty spaces
-    // Assuming we have 5 criteria and the number of columns from grades.length
-    for (let criteriaIndex = 1; criteriaIndex <= 7; criteriaIndex++) {
-      for (let columnIndex = 1; columnIndex <= 10; columnIndex++) {
-        const key = `${criteriaIndex}${columnIndex}`;
-        gradeMatrix[key] = " ";
-        gradeMatrix[`t${columnIndex}`] = " ";
-        gradeMatrix[`co${columnIndex}`] = " "; // Add course outcome reference
-      }
-    }
-
-    // Now update with actual values
-    grades.forEach((grade, columnIndex) => {
+    // Create the experiments array with their details
+    const experiments = grades.map((grade, index) => {
       // Find the column to get its associated course outcome
       const column = classData.columns.find((col) => col.name === grade.column);
+      console.log(`Mapping grade.column '${grade.column}' to column:`, column);
       const courseOutcomeCode = column?.courseOutcome || "";
 
       // Find the course outcome details if there's an association
@@ -150,24 +141,21 @@ router.get("/downloadRubric/:studentId/:classId", auth, async (req, res) => {
         }
       }
 
-      // Set the course outcome for this column
-      gradeMatrix[`co${columnIndex + 1}`] = courseOutcomeDetails;
+      // Calculate total for this experiment
+      const total = grade.grades.reduce((sum, g) => sum + (g.marks || 0), 0);
 
-      grade.grades.forEach((g, criteriaIndex) => {
-        const key = `${criteriaIndex + 1}${columnIndex + 1}`;
-        if (g.marks !== undefined) {
-          gradeMatrix[key] = g.marks;
-        }
-      });
-
-      // Calculate total for this column
-      const columnTotal = grade.grades.reduce((sum, g) => {
-        return sum + (g.marks || 0);
-      }, 0);
-
-      // Add total for this column in format {t1}, {t2}, etc.
-      const totalKey = `t${columnIndex + 1}`;
-      gradeMatrix[totalKey] = columnTotal;
+      return {
+        no: index + 1,
+        co: courseOutcomeDetails,
+        criteria: grade.grades.map((g, idx) => ({
+          name: g.criterion,
+          index: idx + 1,
+          type: column?.type || "Experiment",
+          maxscore: 25,
+          score: g.marks || 0,
+        })),
+        total: total,
+      };
     });
 
     // Load the template
@@ -181,6 +169,22 @@ router.get("/downloadRubric/:studentId/:classId", auth, async (req, res) => {
       paragraphLoop: true,
       linebreaks: true,
     });
+
+    // Prepare the data for the template
+    // Create separate arrays for each data column to avoid concatenation issues
+    const experimentNumbers = experiments.map((exp) => exp.no);
+    const experimentCOs = experiments.map((exp) => exp.co);
+    const experimentTotals = experiments.map((exp) => exp.total);
+
+    // Prepare scores in a format that matches the template structure
+    const experimentScores = [];
+    for (let i = 0; i < experiments[0].criteria.length; i++) {
+      const rowScores = [];
+      for (let j = 0; j < experiments.length; j++) {
+        rowScores.push(experiments[j].criteria[i].score);
+      }
+      experimentScores.push(rowScores);
+    }
 
     // Set the template variables
     try {
@@ -198,8 +202,16 @@ router.get("/downloadRubric/:studentId/:classId", auth, async (req, res) => {
           outcome: co.description,
           level: co.bloomsLevel,
         })),
-        ...gradeMatrix, // This will now include {11}, {12}, etc. format and {t1}, {t2}, etc. for totals
+        // Pass individual arrays for each column in the table
+        e: experimentNumbers, // This will render as separate numbers
+        co: experimentCOs,
+        // Format scores to match template structure
+        scores: experimentScores,
+        criteria: experiments[0].criteria,
+        total: experimentTotals,
       });
+      console.log("Experiment Numbers:", experimentNumbers);
+      console.log("Criteria:", experiments[0].criteria);
     } catch (error) {
       console.error("Template render error:", error);
       return res.status(500).send("Template render error");
