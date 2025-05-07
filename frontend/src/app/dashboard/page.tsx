@@ -51,14 +51,11 @@ export default function Dashboard() {
   const initialFetchDone = React.useRef(false);
 
   React.useEffect(() => {
-    if (!session?.user) {
-      router.push("/auth/login");
-      return;
-    }
-
     if (!initialFetchDone.current) {
-      fetchClasses();
-      initialFetchDone.current = true;
+      if (session) {
+        fetchClasses();
+        initialFetchDone.current = true;
+      }
     }
   }, [session, router]);
 

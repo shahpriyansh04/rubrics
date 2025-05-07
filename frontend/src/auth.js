@@ -30,7 +30,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           }
 
           const { data } = await response.json();
-
           return {
             ...data,
             name: `${data.firstName} ${data.lastName}`,
@@ -66,26 +65,23 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       return token;
     },
     async session({ session, token }) {
-      return {
-        ...session,
-        user: {
-          ...session.user,
-          id: token.id,
-          email: token.email,
-          firstName: token.firstName,
-          lastName: token.lastName,
-          role: token.role,
-          sapid: token.sapid,
-          rollno: token.rollno,
-          year: token.year,
-          class: token.class,
-          batch: token.batch,
-          sem: token.sem,
-          token: token.token,
-          name: `${token.firstName} ${token.lastName}`,
-        },
+      // Attach user information to the session, keeping all fields
+      session.user = {
+        id: token.id,
+        email: token.email,
+        firstName: token.firstName,
+        lastName: token.lastName,
+        role: token.role,
+        sapid: token.sapid,
+        rollno: token.rollno,
+        year: token.year,
+        class: token.class,
+        batch: token.batch,
+        sem: token.sem,
         token: token.token,
+        name: `${token.firstName} ${token.lastName}`,
       };
+      return session;
     },
   },
   session: {

@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
+    "better-auth": "^1.2.7",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "docx": "^9.4.1",
@@ -26,5 +27,3 @@
     "nodemon": "^3.0.3"
   }
 }
-
-

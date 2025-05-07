@@ -24,19 +24,13 @@ export default function CreativeLogin() {
     setError("");
     setIsLoading(true);
 
-    try {
-      await login({
-        redirectTo: "/dashboard",
-        email,
-        password,
-        role,
-      });
-    } catch (error) {
-      console.error("Login error:", error);
-      setError(error instanceof Error ? error.message : "Failed to login");
-    } finally {
-      setIsLoading(false);
-    }
+    login({
+      redirectTo: "/dashboard",
+      email,
+      password,
+      role,
+    });
+    setIsLoading(false);
   };
 
   const updateTab = (index: number) => {
